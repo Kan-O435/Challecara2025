@@ -1,0 +1,13 @@
+# Go バイナリファイル
+challecara2025-back
+
+# 一時ファイルやキャッシュ
+*.tmp
+*.log
+.DS_Store # macOSユーザー向け
+
+# 環境変数ファイル（今後使う可能性あり）
+.env
+
+# Dockerのビルドキャッシュ
+.dockerignore
