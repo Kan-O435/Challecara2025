@@ -1,0 +1,37 @@
+services:
+  app:
+    build: .
+    container_name: challecara-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: example
+      DB_NAME: challecara
+
+  db:
+    image: mysql:8.0
+    container_name: challecara-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: challecara
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  adminer:
+    image: adminer
+    container_name: challecara-adminer
+    restart: always
+    ports:
+      - "8081:8080"
+
+volumes:
+  db_data:
