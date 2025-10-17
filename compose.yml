@@ -5,12 +5,16 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy  # ← ヘルスチェックを待つ
     environment:
       DB_HOST: db
       DB_USER: root
       DB_PASSWORD: example
       DB_NAME: challecara
+      DB_PORT: 3306
+      PORT: 8080
+    restart: on-failure  # ← 失敗時に再起動
 
   db:
     image: mysql:8.0
@@ -25,6 +29,11 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:  # ← ヘルスチェックを追加
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pexample"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   adminer:
     image: adminer
