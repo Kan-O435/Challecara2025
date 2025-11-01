@@ -2,12 +2,13 @@ package models
 
 import (
 	"time"
+
 	"gorm.io/gorm"
 )
 
 type Episode struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
-	NovelID   uint           `gorm:"not null;index" json:"novel_id"`
+	BookID    uint           `gorm:"not null;index" json:"book_id"`
 	Title     string         `gorm:"size:255;not null" json:"title"`
 	Content   string         `gorm:"type:longtext;not null" json:"content"`
 	EpisodeNo int            `gorm:"not null" json:"episode_no"`
