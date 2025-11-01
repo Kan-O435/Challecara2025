@@ -15,6 +15,7 @@ type Book struct {
 	Genre       string         `gorm:"size:100" json:"genre"`
 	Status      string         `gorm:"size:50;default:'draft'" json:"status"` // draft, published, completed
 	Episodes    []Episode      `gorm:"foreignKey:BookID" json:"episodes,omitempty"`
+	Materials   []Material     `gorm:"foreignKey:BookID" json:"materials,omitempty"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
