@@ -18,7 +18,7 @@ func main() {
 	}
 
 	// マイグレーション実行
-	if err := database.Migrate(&models.Novel{}, &models.Episode{}); err != nil {
+	if err := database.Migrate(&models.Book{}, &models.Episode{}); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
@@ -42,24 +42,24 @@ func main() {
 
 	// ハンドラーを初期化
 	db := database.GetDB()
-	novelHandler := handlers.NewNovelHandler(db)
+	bookHandler := handlers.NewBookHandler(db)
 	episodeHandler := handlers.NewEpisodeHandler(db)
 
 	// APIルートを設定
 	api := router.Group("/api")
 	{
-		// 小説関連のルート
-		novels := api.Group("/novels")
+		// 資料関連のルート
+		books := api.Group("/books")
 		{
-			novels.POST("", novelHandler.CreateNovel)
-			novels.GET("", novelHandler.GetNovels)
-			novels.GET("/:id", novelHandler.GetNovel)
-			novels.PUT("/:id", novelHandler.UpdateNovel)
-			novels.DELETE("/:id", novelHandler.DeleteNovel)
-			
-			// エピソード関連のルート（小説配下）- パラメータ名を :id に統一
-			novels.POST("/:id/episodes", episodeHandler.CreateEpisode)
-			novels.GET("/:id/episodes", episodeHandler.GetEpisodes)
+			books.POST("", bookHandler.CreateBook)
+			books.GET("", bookHandler.GetBooks)
+			books.GET("/:id", bookHandler.GetBook)
+			books.PUT("/:id", bookHandler.UpdateBook)
+			books.DELETE("/:id", bookHandler.DeleteBook)
+
+			// エピソード関連のルート（資料配下）- パラメータ名を :id に統一
+			books.POST("/:id/episodes", episodeHandler.CreateEpisode)
+			books.GET("/:id/episodes", episodeHandler.GetEpisodes)
 		}
 
 		// エピソード関連のルート（直接アクセス）

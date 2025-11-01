@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"challecara2025-back/internal/models"
-	
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -20,31 +20,31 @@ func NewEpisodeHandler(db *gorm.DB) *EpisodeHandler {
 
 // CreateEpisode 新しいエピソードを作成
 func (h *EpisodeHandler) CreateEpisode(c *gin.Context) {
-	novelID := c.Param("id")
+	bookID := c.Param("id")
 	var episode models.Episode
-	
+
 	if err := c.ShouldBindJSON(&episode); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// novel_idをパラメータから設定
-	var novelIDUint uint64
-	novelIDUint, err := strconv.ParseUint(novelID, 10, 32)
+	// book_idをパラメータから設定
+	var bookIDUint uint64
+	bookIDUint, err := strconv.ParseUint(bookID, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid novel ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
 	}
-	episode.NovelID = uint(novelIDUint)
+	episode.BookID = uint(bookIDUint)
 
-	// 小説が存在するか確認
-	var novel models.Novel
-	if err := h.db.First(&novel, novelID).Error; err != nil {
+	// 資料が存在するか確認
+	var book models.Book
+	if err := h.db.First(&book, bookID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Novel not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify novel"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify book"})
 		return
 	}
 
@@ -56,12 +56,12 @@ func (h *EpisodeHandler) CreateEpisode(c *gin.Context) {
 	c.JSON(http.StatusCreated, episode)
 }
 
-// GetEpisodes 特定の小説のすべてのエピソードを取得
+// GetEpisodes 特定の資料のすべてのエピソードを取得
 func (h *EpisodeHandler) GetEpisodes(c *gin.Context) {
-	novelID := c.Param("id")
+	bookID := c.Param("id")
 	var episodes []models.Episode
-	
-	if err := h.db.Where("id = ?", novelID).Order("episode_no").Find(&episodes).Error; err != nil {
+
+	if err := h.db.Where("book_id = ?", bookID).Order("episode_no").Find(&episodes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch episodes"})
 		return
 	}
@@ -116,7 +116,7 @@ func (h *EpisodeHandler) UpdateEpisode(c *gin.Context) {
 // DeleteEpisode エピソードを削除
 func (h *EpisodeHandler) DeleteEpisode(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	if err := h.db.Delete(&models.Episode{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete episode"})
 		return
