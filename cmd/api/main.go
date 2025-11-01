@@ -18,7 +18,7 @@ func main() {
 	}
 
 	// マイグレーション実行
-	if err := database.Migrate(&models.Book{}, &models.Episode{}); err != nil {
+	if err := database.Migrate(&models.Book{}, &models.Episode{}, &models.Material{}); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
@@ -44,6 +44,7 @@ func main() {
 	db := database.GetDB()
 	bookHandler := handlers.NewBookHandler(db)
 	episodeHandler := handlers.NewEpisodeHandler(db)
+	materialHandler := handlers.NewMaterialHandler(db)
 
 	// APIルートを設定
 	api := router.Group("/api")
@@ -60,6 +61,10 @@ func main() {
 			// エピソード関連のルート（資料配下）- パラメータ名を :id に統一
 			books.POST("/:id/episodes", episodeHandler.CreateEpisode)
 			books.GET("/:id/episodes", episodeHandler.GetEpisodes)
+
+			// 参考資料関連のルート（資料配下）
+			books.POST("/:id/materials", materialHandler.CreateMaterial)
+			books.GET("/:id/materials", materialHandler.GetMaterials)
 		}
 
 		// エピソード関連のルート（直接アクセス）
@@ -68,6 +73,14 @@ func main() {
 			episodes.GET("/:id", episodeHandler.GetEpisode)
 			episodes.PUT("/:id", episodeHandler.UpdateEpisode)
 			episodes.DELETE("/:id", episodeHandler.DeleteEpisode)
+		}
+
+		// 参考資料関連のルート（直接アクセス）
+		materials := api.Group("/materials")
+		{
+			materials.GET("/:id", materialHandler.GetMaterial)
+			materials.PUT("/:id", materialHandler.UpdateMaterial)
+			materials.DELETE("/:id", materialHandler.DeleteMaterial)
 		}
 	}
 

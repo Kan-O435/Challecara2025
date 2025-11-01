@@ -38,7 +38,7 @@ func (h *BookHandler) CreateBook(c *gin.Context) {
 func (h *BookHandler) GetBooks(c *gin.Context) {
 	var books []models.Book
 
-	if err := h.db.Preload("Episodes").Find(&books).Error; err != nil {
+	if err := h.db.Preload("Episodes").Preload("Materials").Find(&books).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch books"})
 		return
 	}
@@ -51,7 +51,7 @@ func (h *BookHandler) GetBook(c *gin.Context) {
 	id := c.Param("id")
 	var book models.Book
 
-	if err := h.db.Preload("Episodes").First(&book, id).Error; err != nil {
+	if err := h.db.Preload("Episodes").Preload("Materials").First(&book, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
