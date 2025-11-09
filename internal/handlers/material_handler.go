@@ -95,6 +95,26 @@ func (h *MaterialHandler) GetMaterials(c *gin.Context) {
 	c.JSON(http.StatusOK, materials)
 }
 
+// GetMaterialsByIDs 複数の資料をID指定で取得
+func (h *MaterialHandler) GetMaterialsByIDs(c *gin.Context) {
+    var input struct {
+        IDs []uint `json:"ids" binding:"required"`
+    }
+    if err := c.ShouldBindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    var materials []models.Material
+    if err := h.db.Where("id IN ?", input.IDs).Find(&materials).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch materials"})
+        return
+    }
+
+    c.JSON(http.StatusOK, materials)
+}
+
+
 // GetMaterial 特定の参考資料を取得
 func (h *MaterialHandler) GetMaterial(c *gin.Context) {
 	id := c.Param("id")

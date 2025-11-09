@@ -81,6 +81,7 @@ func main() {
 			materials.GET("/:id", materialHandler.GetMaterial)
 			materials.PUT("/:id", materialHandler.UpdateMaterial)
 			materials.DELETE("/:id", materialHandler.DeleteMaterial)
+			materials.POST("/batch", materialHandler.GetMaterialsByIDs)
 		}
 	}
 
