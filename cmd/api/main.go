@@ -9,9 +9,13 @@ import (
 	"challecara2025-back/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// .envファイルを読み込む（エラーは無視 - 本番環境では環境変数が直接設定される）
+	_ = godotenv.Load()
+
 	// データベースに接続
 	if err := database.Connect(); err != nil {
 		log.Fatal("Failed to connect to database:", err)
