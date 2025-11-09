@@ -1,7 +1,9 @@
-# Goアプリケーションのビルドステージ
-FROM golang:1.20-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
+
+# Go toolchainの自動ダウンロードを有効化
+ENV GOTOOLCHAIN=auto
 
 # Goモジュールをキャッシュするために、go.modとgo.sumをコピー
 COPY go.mod go.sum ./
@@ -11,15 +13,16 @@ RUN go mod download
 COPY . .
 
 # アプリケーションをビルド
-RUN go build -o challecara2025-back .
+RUN go build -o challecara2025-back ./cmd/api
 
 # 本番環境用の最終イメージ
 FROM alpine:latest
 
 WORKDIR /root/
 
-# ビルドステージからビルド済みのバイナリをコピー
+# ビルドしたバイナリをコピー
 COPY --from=builder /app/challecara2025-back .
 
-# 実行ファイルを実行
+EXPOSE 8080
+
 CMD ["./challecara2025-back"]
