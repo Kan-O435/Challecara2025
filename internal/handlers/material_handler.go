@@ -31,7 +31,7 @@ type materialUpdateInput struct {
 // CreateMaterial 新しい参考資料を作成
 func (h *MaterialHandler) CreateMaterial(c *gin.Context) {
 	bookIDParam := c.Param("id")
-	bookIDUint64, err := strconv.ParseUint(bookIDParam, 10, 32)
+	bookIDUint64, err := strconv.ParseUint(bookIDParam, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
@@ -72,7 +72,7 @@ func (h *MaterialHandler) CreateMaterial(c *gin.Context) {
 func (h *MaterialHandler) GetMaterials(c *gin.Context) {
 	bookIDParam := c.Param("id")
 
-	if _, err := strconv.ParseUint(bookIDParam, 10, 32); err != nil {
+	if _, err := strconv.ParseUint(bookIDParam, 10, 64); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
 	}

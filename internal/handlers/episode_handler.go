@@ -30,7 +30,7 @@ func (h *EpisodeHandler) CreateEpisode(c *gin.Context) {
 
 	// book_idをパラメータから設定
 	var bookIDUint uint64
-	bookIDUint, err := strconv.ParseUint(bookID, 10, 32)
+	bookIDUint, err := strconv.ParseUint(bookID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
