@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"challecara2025-back/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -31,7 +31,7 @@ type materialUpdateInput struct {
 // CreateMaterial 新しい参考資料を作成
 func (h *MaterialHandler) CreateMaterial(c *gin.Context) {
 	bookIDParam := c.Param("id")
-	bookIDUint64, err := strconv.ParseUint(bookIDParam, 10, 32)
+	bookUUID, err := uuid.Parse(bookIDParam)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
@@ -45,7 +45,7 @@ func (h *MaterialHandler) CreateMaterial(c *gin.Context) {
 
 	// 資料が紐づくBookの存在確認
 	var book models.Book
-	if err := h.db.First(&book, bookIDParam).Error; err != nil {
+	if err := h.db.Where("id = ?", bookUUID).First(&book).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
@@ -54,8 +54,16 @@ func (h *MaterialHandler) CreateMaterial(c *gin.Context) {
 		return
 	}
 
+	// Generate UUIDv7 for the new material
+	newID, err := uuid.NewV7()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate UUID"})
+		return
+	}
+
 	material := models.Material{
-		BookID:  uint(bookIDUint64),
+		ID:      newID,
+		BookID:  bookUUID,
 		Title:   input.Title,
 		Content: input.Content,
 	}
@@ -72,12 +80,13 @@ func (h *MaterialHandler) CreateMaterial(c *gin.Context) {
 func (h *MaterialHandler) GetMaterials(c *gin.Context) {
 	bookIDParam := c.Param("id")
 
-	if _, err := strconv.ParseUint(bookIDParam, 10, 32); err != nil {
+	bookUUID, err := uuid.Parse(bookIDParam)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
 	}
 
-	if err := h.db.First(&models.Book{}, bookIDParam).Error; err != nil {
+	if err := h.db.Where("id = ?", bookUUID).First(&models.Book{}).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
@@ -97,30 +106,35 @@ func (h *MaterialHandler) GetMaterials(c *gin.Context) {
 
 // GetMaterialsByIDs 複数の資料をID指定で取得
 func (h *MaterialHandler) GetMaterialsByIDs(c *gin.Context) {
-    var input struct {
-        IDs []uint `json:"ids" binding:"required"`
-    }
-    if err := c.ShouldBindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	var input struct {
+		IDs []uuid.UUID `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    var materials []models.Material
-    if err := h.db.Where("id IN ?", input.IDs).Find(&materials).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch materials"})
-        return
-    }
+	var materials []models.Material
+	if err := h.db.Where("id IN ?", input.IDs).Find(&materials).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch materials"})
+		return
+	}
 
-    c.JSON(http.StatusOK, materials)
+	c.JSON(http.StatusOK, materials)
 }
-
 
 // GetMaterial 特定の参考資料を取得
 func (h *MaterialHandler) GetMaterial(c *gin.Context) {
 	id := c.Param("id")
 	var material models.Material
 
-	if err := h.db.First(&material, id).Error; err != nil {
+	materialID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid material ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", materialID).First(&material).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Material not found"})
 			return
@@ -137,7 +151,13 @@ func (h *MaterialHandler) UpdateMaterial(c *gin.Context) {
 	id := c.Param("id")
 	var material models.Material
 
-	if err := h.db.First(&material, id).Error; err != nil {
+	materialID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid material ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", materialID).First(&material).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Material not found"})
 			return
@@ -167,7 +187,13 @@ func (h *MaterialHandler) UpdateMaterial(c *gin.Context) {
 func (h *MaterialHandler) DeleteMaterial(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.db.Delete(&models.Material{}, id).Error; err != nil {
+	materialID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid material ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", materialID).Delete(&models.Material{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete material"})
 		return
 	}
