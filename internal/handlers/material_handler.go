@@ -106,6 +106,8 @@ func (h *MaterialHandler) GetMaterials(c *gin.Context) {
 
 // GetMaterialsByIDs 複数の資料をID指定で取得
 func (h *MaterialHandler) GetMaterialsByIDs(c *gin.Context) {
+	bookIDParam := c.Param("id")
+
 	var input struct {
 		IDs []uuid.UUID `json:"ids" binding:"required"`
 	}
@@ -115,7 +117,19 @@ func (h *MaterialHandler) GetMaterialsByIDs(c *gin.Context) {
 	}
 
 	var materials []models.Material
-	if err := h.db.Where("id IN ?", input.IDs).Find(&materials).Error; err != nil {
+	query := h.db.Where("id IN ?", input.IDs)
+
+	// book_idがパスに含まれている場合はフィルタリング
+	if bookIDParam != "" {
+		bookID, err := uuid.Parse(bookIDParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+			return
+		}
+		query = query.Where("book_id = ?", bookID)
+	}
+
+	if err := query.Find(&materials).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch materials"})
 		return
 	}

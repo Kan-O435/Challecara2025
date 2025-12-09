@@ -61,10 +61,12 @@ func main() {
 			// エピソード関連のルート（資料配下）- パラメータ名を :id に統一
 			books.POST("/:id/episodes", episodeHandler.CreateEpisode)
 			books.GET("/:id/episodes", episodeHandler.GetEpisodes)
+			books.POST("/:id/episodes/batch", episodeHandler.GetEpisodesByIDs)
 
 			// 参考資料関連のルート（資料配下）
 			books.POST("/:id/materials", materialHandler.CreateMaterial)
 			books.GET("/:id/materials", materialHandler.GetMaterials)
+			books.POST("/:id/materials/batch", materialHandler.GetMaterialsByIDs)
 		}
 
 		// エピソード関連のルート（直接アクセス）
@@ -81,7 +83,6 @@ func main() {
 			materials.GET("/:id", materialHandler.GetMaterial)
 			materials.PUT("/:id", materialHandler.UpdateMaterial)
 			materials.DELETE("/:id", materialHandler.DeleteMaterial)
-			materials.POST("/batch", materialHandler.GetMaterialsByIDs)
 		}
 	}
 

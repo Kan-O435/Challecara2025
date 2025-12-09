@@ -21,8 +21,3 @@ type Book struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
-
-// TableName keeps compatibility with the existing schema.
-func (Book) TableName() string {
-	return "novels"
-}

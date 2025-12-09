@@ -149,3 +149,36 @@ func (h *EpisodeHandler) DeleteEpisode(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Episode deleted successfully"})
 }
+
+// GetEpisodesByIDs 複数のエピソードIDから一括取得
+func (h *EpisodeHandler) GetEpisodesByIDs(c *gin.Context) {
+	bookIDParam := c.Param("id")
+
+	var input struct {
+		IDs []uuid.UUID `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var episodes []models.Episode
+	query := h.db.Where("id IN ?", input.IDs)
+
+	// book_idがパスに含まれている場合はフィルタリング
+	if bookIDParam != "" {
+		bookID, err := uuid.Parse(bookIDParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+			return
+		}
+		query = query.Where("book_id = ?", bookID)
+	}
+
+	if err := query.Find(&episodes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch episodes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, episodes)
+}
