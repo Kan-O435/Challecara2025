@@ -6,7 +6,7 @@ services:
       - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy  # ← ヘルスチェックを待つ
+        condition: service_healthy
     environment:
       DB_HOST: db
       DB_USER: root
@@ -14,7 +14,9 @@ services:
       DB_NAME: challecara
       DB_PORT: 3306
       PORT: 8080
-    restart: on-failure  # ← 失敗時に再起動
+    restart: on-failure
+    networks:
+      - challechara-network # ← 追加
 
   db:
     image: mysql:8.0
@@ -29,11 +31,23 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-    healthcheck:  # ← ヘルスチェックを追加
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pexample"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-pexample",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - challechara-network # ← 追加
 
   adminer:
     image: adminer
@@ -41,6 +55,12 @@ services:
     restart: always
     ports:
       - "8081:8080"
+    networks:
+      - challechara-network # ← 追加
 
 volumes:
   db_data:
+
+networks:
+  challechara-network:
+    driver: bridge
