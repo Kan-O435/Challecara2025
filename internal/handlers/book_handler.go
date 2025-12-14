@@ -6,6 +6,7 @@ import (
 	"challecara2025-back/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -25,6 +26,14 @@ func (h *BookHandler) CreateBook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Generate UUIDv7 for the new book
+	newID, err := uuid.NewV7()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate UUID"})
+		return
+	}
+	book.ID = newID
 
 	if err := h.db.Create(&book).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create book"})
@@ -51,7 +60,13 @@ func (h *BookHandler) GetBook(c *gin.Context) {
 	id := c.Param("id")
 	var book models.Book
 
-	if err := h.db.Preload("Episodes").Preload("Materials").First(&book, id).Error; err != nil {
+	bookID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+		return
+	}
+
+	if err := h.db.Preload("Episodes").Preload("Materials").Where("id = ?", bookID).First(&book).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
@@ -68,7 +83,13 @@ func (h *BookHandler) UpdateBook(c *gin.Context) {
 	id := c.Param("id")
 	var book models.Book
 
-	if err := h.db.First(&book, id).Error; err != nil {
+	bookID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", bookID).First(&book).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
@@ -94,7 +115,13 @@ func (h *BookHandler) UpdateBook(c *gin.Context) {
 func (h *BookHandler) DeleteBook(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.db.Delete(&models.Book{}, id).Error; err != nil {
+	bookID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", bookID).Delete(&models.Book{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete book"})
 		return
 	}

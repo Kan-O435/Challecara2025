@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"challecara2025-back/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -29,17 +29,24 @@ func (h *EpisodeHandler) CreateEpisode(c *gin.Context) {
 	}
 
 	// book_idをパラメータから設定
-	var bookIDUint uint64
-	bookIDUint, err := strconv.ParseUint(bookID, 10, 32)
+	bookUUID, err := uuid.Parse(bookID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
 	}
-	episode.BookID = uint(bookIDUint)
+	episode.BookID = bookUUID
+
+	// Generate UUIDv7 for the new episode
+	newID, err := uuid.NewV7()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate UUID"})
+		return
+	}
+	episode.ID = newID
 
 	// 資料が存在するか確認
 	var book models.Book
-	if err := h.db.First(&book, bookID).Error; err != nil {
+	if err := h.db.Where("id = ?", bookUUID).First(&book).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
@@ -74,7 +81,13 @@ func (h *EpisodeHandler) GetEpisode(c *gin.Context) {
 	id := c.Param("id")
 	var episode models.Episode
 
-	if err := h.db.First(&episode, id).Error; err != nil {
+	episodeID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid episode ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", episodeID).First(&episode).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Episode not found"})
 			return
@@ -91,7 +104,13 @@ func (h *EpisodeHandler) UpdateEpisode(c *gin.Context) {
 	id := c.Param("id")
 	var episode models.Episode
 
-	if err := h.db.First(&episode, id).Error; err != nil {
+	episodeID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid episode ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", episodeID).First(&episode).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Episode not found"})
 			return
@@ -117,10 +136,49 @@ func (h *EpisodeHandler) UpdateEpisode(c *gin.Context) {
 func (h *EpisodeHandler) DeleteEpisode(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.db.Delete(&models.Episode{}, id).Error; err != nil {
+	episodeID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid episode ID"})
+		return
+	}
+
+	if err := h.db.Where("id = ?", episodeID).Delete(&models.Episode{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete episode"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Episode deleted successfully"})
+}
+
+// GetEpisodesByIDs 複数のエピソードIDから一括取得
+func (h *EpisodeHandler) GetEpisodesByIDs(c *gin.Context) {
+	bookIDParam := c.Param("id")
+
+	var input struct {
+		IDs []uuid.UUID `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var episodes []models.Episode
+	query := h.db.Where("id IN ?", input.IDs)
+
+	// book_idがパスに含まれている場合はフィルタリング
+	if bookIDParam != "" {
+		bookID, err := uuid.Parse(bookIDParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+			return
+		}
+		query = query.Where("book_id = ?", bookID)
+	}
+
+	if err := query.Find(&episodes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch episodes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, episodes)
 }
