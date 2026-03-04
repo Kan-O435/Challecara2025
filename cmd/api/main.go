@@ -6,6 +6,7 @@ import (
 
 	"challecara2025-back/internal/database"
 	"challecara2025-back/internal/handlers"
+	"challecara2025-back/internal/middleware"
 	"challecara2025-back/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func main() {
 	}
 
 	// マイグレーション実行
-	if err := database.Migrate(&models.Book{}, &models.Episode{}, &models.Material{}); err != nil {
+	if err := database.Migrate(&models.User{}, &models.Book{}, &models.Episode{}, &models.Material{}); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
@@ -42,6 +43,7 @@ func main() {
 
 	// ハンドラーを初期化
 	db := database.GetDB()
+	userHandler := handlers.NewUserHandler(db)
 	bookHandler := handlers.NewBookHandler(db)
 	episodeHandler := handlers.NewEpisodeHandler(db)
 	materialHandler := handlers.NewMaterialHandler(db)
@@ -49,40 +51,60 @@ func main() {
 	// APIルートを設定
 	api := router.Group("/api")
 	{
-		// 資料関連のルート
-		books := api.Group("/books")
+		// 認証関連のルート（公開）
+		auth := api.Group("/auth")
 		{
-			books.POST("", bookHandler.CreateBook)
-			books.GET("", bookHandler.GetBooks)
-			books.GET("/:id", bookHandler.GetBook)
-			books.PUT("/:id", bookHandler.UpdateBook)
-			books.DELETE("/:id", bookHandler.DeleteBook)
-
-			// エピソード関連のルート（資料配下）- パラメータ名を :id に統一
-			books.POST("/:id/episodes", episodeHandler.CreateEpisode)
-			books.GET("/:id/episodes", episodeHandler.GetEpisodes)
-			books.POST("/:id/episodes/batch", episodeHandler.GetEpisodesByIDs)
-
-			// 参考資料関連のルート（資料配下）
-			books.POST("/:id/materials", materialHandler.CreateMaterial)
-			books.GET("/:id/materials", materialHandler.GetMaterials)
-			books.POST("/:id/materials/batch", materialHandler.GetMaterialsByIDs)
+			auth.POST("/register", userHandler.Register)
+			auth.POST("/login", userHandler.Login)
 		}
 
-		// エピソード関連のルート（直接アクセス）
-		episodes := api.Group("/episodes")
+		// 認証が必要なルート（個人用アプリなので全て認証必須）
+		protected := api.Group("")
+		protected.Use(middleware.AuthMiddleware())
 		{
-			episodes.GET("/:id", episodeHandler.GetEpisode)
-			episodes.PUT("/:id", episodeHandler.UpdateEpisode)
-			episodes.DELETE("/:id", episodeHandler.DeleteEpisode)
-		}
+			// ユーザー関連のルート
+			users := protected.Group("/users")
+			{
+				users.GET("", userHandler.GetUsers)
+				users.GET("/:id", userHandler.GetProfile)
+				users.PUT("/:id", userHandler.UpdateProfile)
+			}
 
-		// 参考資料関連のルート（直接アクセス）
-		materials := api.Group("/materials")
-		{
-			materials.GET("/:id", materialHandler.GetMaterial)
-			materials.PUT("/:id", materialHandler.UpdateMaterial)
-			materials.DELETE("/:id", materialHandler.DeleteMaterial)
+			// 資料関連のルート
+			books := protected.Group("/books")
+			{
+				books.GET("", bookHandler.GetBooks)
+				books.GET("/:id", bookHandler.GetBook)
+				books.POST("", bookHandler.CreateBook)
+				books.PUT("/:id", bookHandler.UpdateBook)
+				books.DELETE("/:id", bookHandler.DeleteBook)
+
+				// エピソード関連のルート（資料配下）
+				books.GET("/:id/episodes", episodeHandler.GetEpisodes)
+				books.POST("/:id/episodes", episodeHandler.CreateEpisode)
+				books.POST("/:id/episodes/batch", episodeHandler.GetEpisodesByIDs)
+
+				// 参考資料関連のルート（資料配下）
+				books.GET("/:id/materials", materialHandler.GetMaterials)
+				books.POST("/:id/materials", materialHandler.CreateMaterial)
+				books.POST("/:id/materials/batch", materialHandler.GetMaterialsByIDs)
+			}
+
+			// エピソード関連のルート
+			episodes := protected.Group("/episodes")
+			{
+				episodes.GET("/:id", episodeHandler.GetEpisode)
+				episodes.PUT("/:id", episodeHandler.UpdateEpisode)
+				episodes.DELETE("/:id", episodeHandler.DeleteEpisode)
+			}
+
+			// 参考資料関連のルート
+			materials := protected.Group("/materials")
+			{
+				materials.GET("/:id", materialHandler.GetMaterial)
+				materials.PUT("/:id", materialHandler.UpdateMaterial)
+				materials.DELETE("/:id", materialHandler.DeleteMaterial)
+			}
 		}
 	}
 
